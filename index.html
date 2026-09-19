@@ -290,22 +290,20 @@ const $ = id => document.getElementById(id);
 
 /* ================= LEITURA DO RELATÓRIO ================= */
 function lerRelatorio(texto){
-  const limpo = texto.replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
-  const partes = limpo.split(/Estoque-/g);
-  if(partes.length < 2) return {erro:"Não encontrei nenhuma linha de estoque no arquivo."};
+  let bruto = String(texto).replace(/\u00a0/g," ");
+  // se duas linhas colarem uma na outra, separa
+  bruto = bruto.replace(/(\S)(Estoque\s*-\s*\S)/g, "$1\n$2");
+  const linhas = bruto.split(/\r?\n/).map(l=>l.replace(/\s+/g," ").trim()).filter(Boolean);
 
-  let tecnico = "", itens = [];
-  for(let k=1;k<partes.length;k++){
-    let bloco = partes[k].trim();
-    if(!bloco) continue;
-    const esp = bloco.indexOf(" ");
-    if(esp < 0) continue;
-    const local = bloco.slice(0,esp);
-    if(!tecnico) tecnico = local;
-    bloco = bloco.slice(esp+1).trim();
-    if(!bloco) continue;
+  let tecnico="", itens=[], ultimo=null;
 
-    const tk = bloco.split(" ");
+  for(let linha of linhas){
+    const m = linha.match(/^Estoque\s*-\s*(\S+)\s*(.*)$/);
+    if(m){ if(!tecnico) tecnico = m[1]; linha = m[2].trim(); }
+    if(!linha) continue;
+    if(/^(Relat[óo]rio|Quantidade\b|Custo\b|Estoque\s+Produto|R\$)/i.test(linha)) continue;
+
+    const tk = linha.split(" ");
     let corte = -1;
     for(let i=0;i+2<tk.length;i++){
       if(/^\d+$/.test(tk[i]) && /^\d+$/.test(tk[i+1]) && /^\d+$/.test(tk[i+2])){
@@ -313,57 +311,198 @@ function lerRelatorio(texto){
         if(a-b===c){ corte=i; break; }
       }
     }
-    if(corte < 0) continue;
+
+    // linha sem os três números = continuação de referências da linha anterior
+    if(corte < 0){
+      if(ultimo) tk.filter(x=>x && x!=="-").forEach(x=>ultimo.r.push(x));
+      continue;
+    }
 
     let nome = tk.slice(0,corte).join(" ").trim();
-    nome = nome.replace(/\s+\d{8}\s*-\s*.+$/,"").trim();
-    nome = nome.replace(/[\s\-–—]+$/,"").trim();
+    nome = nome.replace(/\s+\d{8}\s*-\s*.+$/,"").trim().replace(/[\s\-–—]+$/,"").trim();
     if(!nome) continue;
 
-    const q = +tk[corte+2];
-    const refs = tk.slice(corte+3).filter(x=>x && x !== "-");
-    const u = /por\s+metro/i.test(nome) ? "m" : "un";
-    itens.push({n:nome, q:q, r:refs, u:u});
+    const item = {
+      n: nome,
+      q: +tk[corte+2],
+      r: tk.slice(corte+3).filter(x=>x && x!=="-"),
+      u: /por\s+metro/i.test(nome) ? "m" : "un"
+    };
+    itens.push(item);
+    ultimo = item;
   }
+
   if(!itens.length) return {erro:"Li o arquivo, mas não consegui identificar os itens."};
-  return {tecnico, itens};
+  const suspeitos = itens.filter(i=>i.r.length > Math.max(i.q,1) + 2).length;
+  return {tecnico: tecnico || "", itens, suspeitos};
 }
 
 async function lerPDF(file){
   if(!window.pdfjsLib) throw new Error("leitor de PDF não carregou");
   const buf = await file.arrayBuffer();
   const doc = await pdfjsLib.getDocument({data:buf}).promise;
-  let txt = "";
+  const palavras = [];
   for(let p=1;p<=doc.numPages;p++){
     const pg = await doc.getPage(p);
     const c = await pg.getTextContent();
-    txt += " " + c.items.map(i=>i.str).join(" ");
+    c.items.forEach(i=>{
+      const s = (i.str||"").trim();
+      if(!s) return;
+      const x0 = i.transform[4], y = i.transform[5];
+      palavras.push({p:p, x0:x0, x1:x0 + (i.width||0), top:-y, s:s});
+    });
   }
-  return txt;
+  return palavras;
+}
+
+function montarLinhas(palavras){
+  const mapa = new Map();
+  palavras.forEach(w=>{
+    const k = w.p + ":" + Math.round(w.top/3);
+    if(!mapa.has(k)) mapa.set(k, []);
+    mapa.get(k).push(w);
+  });
+  return [...mapa.keys()]
+    .sort((a,b)=>{
+      const [pa,ta] = a.split(":").map(Number), [pb,tb] = b.split(":").map(Number);
+      return pa-pb || ta-tb;
+    })
+    .map(k => mapa.get(k).sort((x,y)=>x.x0-y.x0));
+}
+
+const LINHA_LIXO = /^(P[áa]gina|Total|Usu[áa]rio|Relat[óo]rio|Estoque:)/i;
+
+// leitura pela posição das colunas (formato novo do SGP)
+function lerPorColunas(linhas){
+  let cols = null, esperado = null, emitido = "";
+  for(const ln of linhas){
+    const txt = ln.map(w=>w.s).join(" ");
+    if(esperado === null){
+      const mq = txt.match(/Quantidade:\s*([\d.]+)/i);
+      if(mq) esperado = parseInt(mq[1].replace(/\./g,""),10);
+      const md = txt.match(/Usu[áa]rio:\s*(.+?)\s*\((\d{2}\/\d{2}\/\d{4}[^)]*)\)/i);
+      if(md) emitido = `${md[1]} · ${md[2]}`;
+    }
+    if(/Produto/i.test(txt) && /Refer[êe]ncias/i.test(txt)){
+      const grupos = [];
+      let at = null;
+      ln.forEach(w=>{
+        if(!at || w.x0 - at[1] > 10){ at = [w.x0, w.x1]; grupos.push(at); }
+        else at[1] = w.x1;
+      });
+      cols = grupos.map(g=>g[0]);
+      break;
+    }
+  }
+  if(!cols || cols.length < 4) return null;
+
+  const iRef = cols.length-1, iQtd = cols.length-2;
+  const colDe = x => { let k=0; cols.forEach((c,i)=>{ if(x >= c-6) k=i; }); return k; };
+
+  let tecnico = "", recs = [], maxDir = 0;
+  for(const ln of linhas){
+    if(LINHA_LIXO.test(ln[0].s)) continue;
+    const cel = {};
+    ln.forEach(w=>{ const i = colDe(w.x0); (cel[i] = cel[i]||[]).push(w); });
+
+    const c0 = (cel[0]||[]).map(w=>w.s).join(" ");
+    const m = c0.match(/^Estoque\s*-\s*(\S+)/);
+    if(m){ if(!tecnico) tecnico = m[1]; recs.push({nome:[], q:null, refs:[]}); }
+    if(!recs.length) continue;
+    const r = recs[recs.length-1];
+
+    if(cel[1]){
+      const ws = cel[1].map(w=>w.s);
+      // quando não há NCM na linha, o traço da coluna vizinha gruda no nome
+      if(!cel[2] && ws.length && ws[ws.length-1].length>1 && /-$/.test(ws[ws.length-1])){
+        ws[ws.length-1] = ws[ws.length-1].slice(0,-1);
+      }
+      ws.filter(Boolean).forEach(x=>r.nome.push(x));
+    }
+    if(cel[iQtd] && r.q===null){
+      const v = cel[iQtd].map(w=>w.s).join("");
+      if(/^\d+$/.test(v)) r.q = +v;
+    }
+    if(cel[iRef]){
+      const txt = cel[iRef].map(w=>w.s).join("");
+      const x1 = Math.max.apply(null, cel[iRef].map(w=>w.x1));
+      if(x1 > maxDir) maxDir = x1;
+      r.refs.push({s:txt, x1:x1});
+    }
+  }
+
+  const itens = recs.map(r=>{
+    const alvo = Math.max(r.q||1, 1);
+    let fr = r.refs.slice(), mudou = true;
+    // referência quebrada em duas linhas: junta enquanto sobrar fragmento
+    while(fr.length > alvo && mudou){
+      mudou = false;
+      for(let i=0;i<fr.length-1;i++){
+        if(fr[i].x1 >= maxDir-6 || /-$/.test(fr[i].s)){
+          fr[i] = {s: fr[i].s + fr[i+1].s, x1: fr[i+1].x1};
+          fr.splice(i+1,1); mudou = true; break;
+        }
+      }
+    }
+    const nome = r.nome.join(" ").replace(/\s+/g," ").trim().replace(/[\s\-–—]+$/,"").trim();
+    return {n:nome, q:r.q, r:fr.map(f=>f.s), u:/por\s+metro/i.test(nome)?"m":"un"};
+  });
+
+  const bons = itens.filter(i=>i.n && i.q!==null && i.q < 1000000);
+  if(!bons.length || bons.length < itens.length*0.95) return null;
+  return {
+    tecnico: tecnico||"",
+    itens: bons,
+    esperado: esperado,
+    emitido: emitido,
+    suspeitos: bons.filter(i=>i.r.length > Math.max(i.q,1)+2).length
+  };
 }
 
 /* ================= TELA DE IMPORTAÇÃO ================= */
-function avisoImp(t,tipo){ $("msg-imp").textContent=t; $("msg-imp").className="msg "+(tipo||""); }
+function avisoImp(t,tipo){ const e=$("msg-imp"); e.innerHTML=""; e.textContent=t; e.className="msg "+(tipo||""); }
 
 function mostrarPrevia(res){
   pendente = res;
-  $("prev-h").textContent = `Técnico: ${res.tecnico} — ${res.itens.length} itens, ${res.itens.reduce((a,i)=>a+i.q,0)} unidades`;
+  const nomeTec = res.tecnico || "não identificado";
+  const total = res.itens.reduce((a,i)=>a+i.q,0);
+  $("prev-h").textContent = `Técnico: ${nomeTec} — ${res.itens.length} itens, ${total} unidades`;
   $("prev-b").innerHTML = res.itens.map(i=>`
     <tr><td>${esc(i.n)}</td><td class="q">${i.q} ${i.u}</td>
     <td class="refc">${i.r.length? esc(i.r.join(" · ")) : "—"}</td></tr>`).join("");
   $("prev").classList.remove("hidden");
+
+  const av = [];
+  if(res.emitido) av.push({t:`Relatório emitido por ${res.emitido}`, k:""});
+  if(res.esperado != null){
+    av.push(res.esperado === total
+      ? {t:`Confere com o cabeçalho do relatório: ${total} unidades.`, k:"s"}
+      : {t:`Atenção: o cabeçalho do relatório diz ${res.esperado} unidades e eu li ${total}. Confira antes de iniciar.`, k:"e"});
+  }
+  if(res.suspeitos) av.push({t:`Atenção: ${res.suspeitos} item(ns) vieram com mais referências do que unidades.`, k:"e"});
+  if(!res.tecnico) av.push({t:"Não achei o nome do técnico no arquivo. Você digita ao iniciar.", k:"e"});
+
+  const box = $("msg-imp");
+  box.innerHTML = av.map(a=>`<div style="color:${a.k==="e"?"var(--red)":(a.k==="s"?"var(--ok)":"var(--gray-l)")}">${esc(a.t)}</div>`).join("");
+  box.className = "msg";
   $("prev").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
 async function processarArquivo(file){
   avisoImp("Lendo o arquivo…","");
   try{
-    let texto;
-    if(/\.pdf$/i.test(file.name) || file.type==="application/pdf") texto = await lerPDF(file);
-    else texto = await file.text();
-    const res = lerRelatorio(texto);
-    if(res.erro){ avisoImp(res.erro+" Tente colar o texto do relatório na opção abaixo.","e"); return; }
-    avisoImp("","");
+    let res = null;
+    if(/\.pdf$/i.test(file.name) || file.type==="application/pdf"){
+      const linhas = montarLinhas(await lerPDF(file));
+      res = lerPorColunas(linhas);
+      if(!res){
+        const texto = linhas.map(l=>l.map(w=>w.s).join(" ")).join("\n");
+        res = lerRelatorio(texto);
+      }
+    } else {
+      res = lerRelatorio(await file.text());
+    }
+    if(!res || res.erro){ avisoImp((res&&res.erro||"Não consegui ler esse arquivo.")+" Tente colar o texto do relatório na opção abaixo.","e"); return; }
     mostrarPrevia(res);
   }catch(err){
     avisoImp("Não consegui abrir esse arquivo. Tente colar o texto do relatório na opção abaixo.","e");
@@ -388,9 +527,14 @@ $("btn-cancelar").addEventListener("click", ()=>{ pendente=null; $("prev").class
 
 $("btn-usar").addEventListener("click", ()=>{
   if(!pendente) return;
-  const chave = PREFIX + pendente.tecnico;
-  if(localStorage.getItem(chave) && !confirm(`Já existe um checklist salvo de ${pendente.tecnico} neste aparelho. Começar um novo apaga o anterior. Continuar?`)) return;
-  iniciar(pendente.tecnico, pendente.itens, null);
+  let nome = pendente.tecnico;
+  if(!nome){
+    nome = (prompt("Digite o nome do técnico:","") || "").trim();
+    if(!nome) return;
+  }
+  const chave = PREFIX + nome;
+  if(localStorage.getItem(chave) && !confirm(`Já existe um checklist salvo de ${nome} neste aparelho. Começar um novo apaga o anterior. Continuar?`)) return;
+  iniciar(nome, pendente.itens, null);
 });
 
 /* ================= SALVOS ================= */
