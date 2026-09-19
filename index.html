@@ -822,63 +822,100 @@ $("btn-sig-limpar").addEventListener("click", ()=>{ assinou=false; sigSize(); })
 
 /* ================= FECHAMENTO ================= */
 function gerarTexto(){
-  const agora=new Date(), L=[], nome=(st.tec||"Sem nome").trim();
-  let ok=0,div=0,pend=0,unSis=0,unCont=0,linhasDiv=[];
+  const agora=new Date(), nome=(st.tec||"Sem nome").trim();
+  const LARG = 60, REG = "=".repeat(LARG), SUB = "-".repeat(LARG);
+  const L=[];
+  const rot = (t,v)=> "  " + (t + " ").padEnd(24,".") + "  " + v;
+  const titulo = t => { L.push(""); L.push(SUB); L.push("  " + t); L.push(SUB); L.push(""); };
+
+  // contagem efetiva: item marcado OK sem número digitado vale a quantidade do sistema
+  const lido = (e,it) => {
+    if(e.cont !== "") return Number(e.cont);
+    if(e.status === "ok") return it.q;
+    return null;
+  };
+
+  let ok=0,div=0,pend=0,unSis=0,unCont=0;
+  const problemas=[];
+
   ITENS.forEach((it,i)=>{
-    const e=st.est[i], cont = e.cont===""?null:Number(e.cont);
-    unSis+=it.q; if(cont!==null) unCont+=cont;
-    const dif = cont===null?null:cont-it.q;
+    const e = st.est[i], cont = lido(e,it);
+    unSis += it.q;
+    if(cont !== null) unCont += cont;
+    const dif = cont===null ? null : cont-it.q;
     const refNok = e.refs.filter(r=>r.ok==="nok");
-    const divergente = (dif!==null&&dif!==0)||(e.status&&e.status!=="ok")||refNok.length>0;
-    if(!e.status) pend++; else if(divergente) div++; else ok++;
-    if(divergente){
-      const t=[];
-      if(dif!==null&&dif!==0) t.push(dif>0?`sobra ${dif}`:`falta ${Math.abs(dif)}`);
-      if(e.status&&e.status!=="ok") t.push((STATUS.find(s=>s.v===e.status)||{}).t);
-      refNok.forEach(r=>t.push(`ref divergente: sistema "${r.exp||"-"}" / encontrada "${r.real||"nao informada"}"`));
-      if(e.obs) t.push(`obs: ${e.obs}`);
-      linhasDiv.push(`  - ${it.n} (sistema ${it.q} / contado ${cont===null?"nao contado":cont}) -> ${t.join(" | ")}`);
-    }
+    const ruim = (dif!==null&&dif!==0) || (e.status&&e.status!=="ok") || refNok.length>0;
+    if(!e.status) pend++; else if(ruim) div++; else ok++;
+    if(ruim) problemas.push({it, e, cont, dif, refNok});
   });
-  L.push("=================================================");
-  L.push("        MGN FIBRA - CHECKLIST DE ESTOQUE");
-  L.push("=================================================");
-  L.push(`Tecnico..............: ${nome}`);
-  L.push(`Conferido por........: ${st.resp||"-"}`);
-  L.push(`Veiculo / placa......: ${st.veic||"-"}`);
-  L.push(`Inicio do checklist..: ${fmt(new Date(st.inicio))}`);
-  L.push(`Fechamento...........: ${fmt(agora)}`);
+
+  L.push(REG);
+  L.push("   MGN FIBRA  |  CHECKLIST DE ESTOQUE");
+  L.push(REG);
   L.push("");
-  L.push("-------------------- RESUMO ---------------------");
-  L.push(`Tipos de item...........: ${ITENS.length}`);
-  L.push(`Conferidos OK...........: ${ok}`);
-  L.push(`Com divergencia.........: ${div}`);
-  L.push(`Nao conferidos..........: ${pend}`);
-  L.push(`Unidades no sistema.....: ${unSis}`);
-  L.push(`Unidades contadas.......: ${unCont}`);
-  L.push(`Diferenca total.........: ${unCont-unSis}`);
+  L.push(rot("Técnico", nome));
+  L.push(rot("Conferido por", st.resp||"-"));
+  L.push(rot("Veículo / placa", st.veic||"-"));
+  L.push(rot("Início", fmt(new Date(st.inicio))));
+  L.push(rot("Fechamento", fmt(agora)));
   L.push("");
-  L.push("----------------- DIVERGENCIAS ------------------");
-  L.push(linhasDiv.length? linhasDiv.join("\n") : "  Nenhuma divergencia registrada.");
+
+  titulo("RESUMO");
+  L.push(rot("Tipos de item", ITENS.length));
+  L.push(rot("Conferidos OK", ok));
+  L.push(rot("Com divergência", div));
+  L.push(rot("Não conferidos", pend));
   L.push("");
-  L.push("--------------- CONFERENCIA ITEM A ITEM ---------");
-  ITENS.forEach((it,i)=>{
-    const e=st.est[i];
-    const cont = e.cont===""?"nao contado":e.cont;
-    const stx = e.status? (STATUS.find(s=>s.v===e.status)||{}).t : "NAO CONFERIDO";
-    L.push(`[${stx}] ${it.n}`);
-    L.push(`      Sistema: ${it.q} ${it.u||"un"}  |  Contado: ${cont}`);
-    if(e.obs) L.push(`      Obs: ${e.obs}`);
-    e.refs.forEach((r,j)=>{
-      const s = r.ok==="ok"?"CONFERE":(r.ok==="nok"?"NAO CONFERE":"nao verificada");
-      L.push(`      Ref ${j+1}: ${r.exp||"(sem ref no sistema)"} -> ${s}${r.ok==="nok"?`  | encontrada: ${r.real||"nao informada"}`:""}`);
+  L.push(rot("Unidades no sistema", unSis));
+  L.push(rot("Unidades contadas", unCont));
+  L.push(rot("Diferença", (unCont-unSis > 0 ? "+" : "") + (unCont-unSis)));
+  L.push("");
+
+  titulo(`DIVERGÊNCIAS  (${problemas.length})`);
+  if(!problemas.length){
+    L.push("  Nenhuma divergência registrada.");
+    L.push("");
+  } else {
+    problemas.forEach((p,n)=>{
+      L.push(`  ${n+1}) ${p.it.n}`);
+      const linha = [`Sistema ${p.it.q} ${p.it.u||"un"}`,
+                     p.cont===null ? "Contado: não informado" : `Contado ${p.cont} ${p.it.u||"un"}`];
+      if(p.dif!==null && p.dif!==0) linha.push(p.dif>0 ? `SOBRA ${p.dif}` : `FALTA ${Math.abs(p.dif)}`);
+      L.push("     " + linha.join("   |   "));
+      if(p.e.status && p.e.status!=="ok") L.push("     Situação: " + (STATUS.find(s=>s.v===p.e.status)||{}).t);
+      p.refNok.forEach(r=>{
+        L.push(`     Referência não confere:`);
+        L.push(`        sistema ....... ${r.exp||"-"}`);
+        L.push(`        encontrada .... ${r.real||"não informada"}`);
+      });
+      if(p.e.obs) L.push("     Observação: " + p.e.obs);
+      L.push("");
     });
+  }
+
+  titulo("CONFERÊNCIA ITEM A ITEM");
+  ITENS.forEach((it,i)=>{
+    const e = st.est[i], cont = lido(e,it);
+    const tag = e.status ? (STATUS.find(s=>s.v===e.status)||{}).t.toUpperCase() : "PENDENTE";
+    L.push(`  [${(" "+tag+" ").padEnd(21)}] ${it.n}`);
+    L.push(`      Sistema ${it.q} ${it.u||"un"}   |   Contado ${cont===null?"não informado":cont+" "+(it.u||"un")}`);
+    if(e.obs) L.push(`      Observação: ${e.obs}`);
+    e.refs.forEach((r,j)=>{
+      const s = r.ok==="ok" ? "confere" : (r.ok==="nok" ? "NÃO CONFERE" : "não verificada");
+      L.push(`      Ref ${j+1}   ${(r.exp||"(sem referência no sistema)")}   ->   ${s}`);
+      if(r.ok==="nok") L.push(`              encontrada:   ${r.real||"não informada"}`);
+    });
+    L.push("");
   });
+
+  L.push(SUB);
+  L.push("  Arquivos desta pasta:  checklist.txt · foto.jpg · assinatura.png");
+  L.push(SUB);
   L.push("");
-  L.push("-------------------------------------------------");
-  L.push("Assinatura do tecnico: arquivo assinatura.png");
-  L.push("Foto do tecnico......: arquivo foto.jpg");
-  L.push("-------------------------------------------------");
+  L.push("  Checklist gerado pelo painel de estoque MGN FIBRA");
+  L.push("  Desenvolvido por Leandro Aquino · Gerência Técnica");
+  L.push("");
+
   return {txt:L.join("\n"), pend, agora, nome};
 }
 function aviso(t,tipo){ $("msg").textContent=t; $("msg").className="msg "+(tipo||""); }
