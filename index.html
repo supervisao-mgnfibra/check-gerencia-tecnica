@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checklist de Estoque — MGN FIBRA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#ED1C24; --white:#FFFFFF; --black:#000000;
+  --gray-l:#D9D9D9; --gray-d:#4A4A4A;
+  --panel:#0d0d0d; --panel-2:#151515; --line:#2a2a2a;
+  --ok:#22c55e; --warn:#f59e0b;
+  --font-d:'Archivo','Arial Black',Impact,sans-serif;
+  --font-b:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--black);color:var(--white);font-family:var(--font-b);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+button,input,textarea,select{font-family:inherit;font-size:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.hidden{display:none !important}
+
+.top{position:sticky;top:0;z-index:40;background:var(--black);border-bottom:3px solid var(--red)}
+.top-in{max-width:1080px;margin:0 auto;padding:14px 16px 12px}
+.brand{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mark{font-family:var(--font-d);font-weight:900;font-size:26px;letter-spacing:-.5px;color:var(--white);background:var(--red);padding:2px 12px;border-radius:4px;box-shadow:0 0 22px rgba(237,28,36,.45)}
+.mark span{color:var(--black)}
+.ttl{font-family:var(--font-d);font-weight:700;font-size:19px;letter-spacing:-.2px}
+.sub{color:var(--gray-l);font-size:13px;margin-top:2px}
+.ident{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:14px}
+.fld label{display:block;font-size:11.5px;color:var(--gray-l);margin-bottom:4px;font-weight:600}
+.fld input{width:100%;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--white)}
+.fld input:read-only{color:var(--gray-l)}
+
+.prog{max-width:1080px;margin:0 auto;padding:0 16px}
+.bar{height:8px;background:#1c1c1c;border-radius:99px;overflow:hidden;margin:14px 0 10px}
+.bar i{display:block;height:100%;width:0;background:var(--red);box-shadow:0 0 14px rgba(237,28,36,.7);transition:width .25s}
+.stats{display:flex;gap:8px;flex-wrap:wrap;font-size:12.5px;padding-bottom:12px}
+.pill{border:1px solid var(--line);border-radius:99px;padding:4px 11px;background:var(--panel)}
+.pill b{font-family:var(--font-d);font-weight:700}
+.pill.ok b{color:var(--ok)} .pill.bad b{color:var(--red)} .pill.pend b{color:var(--gray-l)}
+
+.tools{position:sticky;top:0;z-index:30;background:var(--black);border-bottom:1px solid var(--line)}
+.tools-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{flex:1 1 200px;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--white)}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--gray-l);padding:8px 13px;border-radius:99px;font-size:13px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:var(--white)}
+.btn{border:2px solid var(--white);background:transparent;color:var(--white);padding:9px 14px;border-radius:6px;font-weight:700;font-size:13.5px}
+.btn.solid{background:var(--red);border-color:var(--red)}
+.btn.ghost{border-color:var(--line);color:var(--gray-l);font-weight:600}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+main{max-width:1080px;margin:0 auto;padding:16px 16px 40px}
+
+/* importação */
+.drop{border:2px dashed var(--line);border-radius:12px;padding:38px 20px;text-align:center;background:var(--panel);transition:border-color .15s,background .15s}
+.drop.on{border-color:var(--red);background:#160607}
+.drop h2{font-family:var(--font-d);font-weight:900;font-size:24px;margin:0 0 6px;letter-spacing:-.4px}
+.drop p{color:var(--gray-l);font-size:14px;margin:0 auto 18px;max-width:52ch}
+.mini{color:var(--gray-d);font-size:12px;margin-top:14px}
+.saved{margin-top:22px}
+.saved h3{font-family:var(--font-d);font-weight:700;font-size:15px;margin:0 0 10px}
+.sv{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:8px;padding:11px 13px;margin-bottom:8px;flex-wrap:wrap}
+.sv .who{font-weight:700}
+.sv .when{color:var(--gray-d);font-size:12px}
+details.colar{margin-top:16px}
+details.colar summary{color:var(--gray-l);font-size:13px;cursor:pointer;padding:6px 0}
+details.colar textarea{width:100%;min-height:130px;margin-top:8px;padding:11px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--white);font-family:ui-monospace,monospace;font-size:12.5px}
+
+/* prévia */
+.prev{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:16px}
+.prev h3{font-family:var(--font-d);font-weight:700;font-size:16px;margin:0 0 10px}
+.prev table{width:100%;border-collapse:collapse;font-size:13px}
+.prev th{text-align:left;color:var(--gray-l);font-size:11px;font-weight:700;border-bottom:1px solid var(--line);padding:6px 6px}
+.prev td{padding:6px 6px;border-bottom:1px solid #1a1a1a;vertical-align:top}
+.prev td.q{font-family:var(--font-d);font-weight:700;text-align:right;white-space:nowrap}
+.prev .refc{color:var(--gray-d);font-size:11.5px}
+.scrollbox{max-height:340px;overflow:auto}
+
+/* itens */
+.card{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--gray-d);border-radius:8px;padding:13px 14px;margin-bottom:10px}
+.card[data-st="ok"]{border-left-color:var(--ok)}
+.card[data-st="falta"],.card[data-st="perdido"]{border-left-color:var(--red)}
+.card[data-st="trocar"],.card[data-st="corrigir"]{border-left-color:var(--warn)}
+.card-h{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.nm{font-weight:600;font-size:15px;line-height:1.3}
+.qtd-sys{flex:0 0 auto;text-align:center;border:1px solid var(--line);border-radius:6px;padding:4px 10px;background:var(--panel-2);min-width:64px}
+.qtd-sys small{display:block;font-size:10px;color:var(--gray-l);letter-spacing:.3px}
+.qtd-sys b{font-family:var(--font-d);font-weight:900;font-size:20px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:11px}
+.counter{display:flex;align-items:center;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel-2)}
+.counter button{width:38px;height:38px;background:transparent;border:0;color:var(--white);font-size:19px;font-weight:700}
+.counter button:hover{background:var(--red)}
+.counter input{width:70px;height:38px;border:0;background:transparent;color:var(--white);text-align:center;font-family:var(--font-d);font-weight:700;font-size:16px}
+.cl{font-size:11.5px;color:var(--gray-l);align-self:center}
+.sts{display:flex;gap:6px;flex-wrap:wrap}
+.sbtn{border:1px solid var(--line);background:var(--panel-2);color:var(--gray-l);padding:8px 11px;border-radius:6px;font-size:12.5px;font-weight:600}
+.sbtn[aria-pressed="true"]{color:var(--white);border-color:transparent}
+.sbtn[data-v="ok"][aria-pressed="true"]{background:var(--ok);color:#052e12}
+.sbtn[data-v="falta"][aria-pressed="true"],.sbtn[data-v="perdido"][aria-pressed="true"]{background:var(--red)}
+.sbtn[data-v="trocar"][aria-pressed="true"],.sbtn[data-v="corrigir"][aria-pressed="true"]{background:var(--warn);color:#2b1a00}
+.obs{width:100%;margin-top:9px;padding:9px 11px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--white);resize:vertical;min-height:40px;display:none}
+.card.show-obs .obs{display:block}
+.diff{font-size:12.5px;font-weight:700;margin-top:8px;display:none}
+.card.has-diff .diff{display:block;color:var(--red)}
+.refs{margin-top:11px;border-top:1px dashed var(--line);padding-top:10px}
+.refs-h{font-size:11.5px;color:var(--gray-l);font-weight:700;margin-bottom:7px}
+.ref{display:flex;gap:7px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.ref-n{font-family:var(--font-d);font-weight:700;font-size:12px;color:var(--gray-l);min-width:22px}
+.ref-exp{flex:1 1 180px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;color:var(--white);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:6px 8px}
+.ref-exp.empty{color:var(--gray-d);font-style:italic;font-family:var(--font-b)}
+.rbtn{border:1px solid var(--line);background:var(--panel-2);color:var(--gray-l);padding:6px 10px;border-radius:5px;font-size:12px;font-weight:700}
+.rbtn[aria-pressed="true"][data-v="ok"]{background:var(--ok);color:#052e12;border-color:transparent}
+.rbtn[aria-pressed="true"][data-v="nok"]{background:var(--red);color:#fff;border-color:transparent}
+.ref-real{display:none;width:100%;margin-top:2px;padding:7px 9px;border-radius:5px;border:1px solid var(--red);background:var(--panel-2);color:var(--white);font-family:ui-monospace,monospace;font-size:12.5px}
+.ref.nok .ref-real{display:block}
+
+.block{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-top:18px}
+.block h2{font-family:var(--font-d);font-weight:700;font-size:16px;margin:0 0 4px}
+.block p{color:var(--gray-l);font-size:13px;margin:0 0 12px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.shot{width:100%;aspect-ratio:4/3;background:var(--panel-2);border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--gray-d);font-size:13px}
+.shot img,.shot video{width:100%;height:100%;object-fit:cover}
+#sig{width:100%;height:190px;background:#fff;border-radius:8px;touch-action:none;display:block}
+.hint{font-size:11.5px;color:var(--gray-d);margin-top:7px}
+.final{text-align:center;padding:26px 16px}
+.final .btn{font-size:16px;padding:15px 30px}
+.msg{margin-top:12px;font-size:13.5px;font-weight:600;min-height:20px}
+.msg.e{color:var(--red)} .msg.s{color:var(--ok)}
+.foot{text-align:center;color:var(--gray-d);font-size:11.5px;padding:22px 0 38px}
+.foot .assina{display:inline-block;color:var(--gray-l);font-size:12px}
+.foot .assina b{color:var(--red);font-family:var(--font-d);font-weight:700;letter-spacing:.2px}
+@media (max-width:560px){.mark{font-size:21px}.ttl{font-size:16px}.drop{padding:26px 14px}}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <div class="mark">MGN<span>|</span></div>
+      <div>
+        <div class="ttl">Checklist mensal de estoque</div>
+        <div class="sub" id="subttl">Conferência física × sistema</div>
+      </div>
+    </div>
+    <div class="ident hidden" id="ident">
+      <div class="fld"><label for="tec">Técnico</label><input id="tec" autocomplete="off"></div>
+      <div class="fld"><label for="resp">Conferido por</label><input id="resp" placeholder="Seu nome" autocomplete="off"></div>
+      <div class="fld"><label for="dt">Data e hora de início</label><input id="dt" readonly></div>
+      <div class="fld"><label for="veic">Veículo / placa</label><input id="veic" placeholder="Opcional" autocomplete="off"></div>
+    </div>
+  </div>
+  <div class="prog hidden" id="progwrap">
+    <div class="bar"><i id="barfill"></i></div>
+    <div class="stats">
+      <span class="pill pend">Pendentes <b id="s-pend">0</b></span>
+      <span class="pill ok">Conferidos OK <b id="s-ok">0</b></span>
+      <span class="pill bad">Divergências <b id="s-div">0</b></span>
+      <span class="pill">Itens <b id="s-tot">0</b></span>
+      <span class="pill">Unidades no sistema <b id="s-un">0</b></span>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== TELA 1: IMPORTAR ===================== -->
+<main id="tela-import">
+  <div class="drop" id="drop">
+    <h2>Comece pelo arquivo do técnico</h2>
+    <p>Baixe o relatório de estoque do técnico no sistema e solte o PDF aqui. O painel lê os itens, a quantidade atual e as referências sozinho.</p>
+    <button class="btn solid" id="btn-pdf">Escolher o PDF do estoque</button>
+    <input type="file" id="file-pdf" accept="application/pdf,.pdf,.txt,.csv" class="hidden">
+    <div class="mini">Também aceita arrastar e soltar o arquivo nesta área.</div>
+  </div>
+
+  <details class="colar">
+    <summary>O PDF não leu direito? Cole o texto do relatório aqui</summary>
+    <textarea id="txt-colar" placeholder="Cole aqui o conteúdo do relatório…"></textarea>
+    <div class="row"><button class="btn ghost" id="btn-colar">Ler o texto colado</button></div>
+  </details>
+
+  <div class="msg" id="msg-imp"></div>
+
+  <div class="prev hidden" id="prev">
+    <h3 id="prev-h">Prévia</h3>
+    <div class="scrollbox">
+      <table>
+        <thead><tr><th>Item</th><th style="text-align:right">Qtd. atual</th><th>Referências</th></tr></thead>
+        <tbody id="prev-b"></tbody>
+      </table>
+    </div>
+    <div class="row">
+      <button class="btn solid" id="btn-usar">Iniciar checklist com esses itens</button>
+      <button class="btn ghost" id="btn-cancelar">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="saved hidden" id="saved">
+    <h3>Checklists salvos neste aparelho</h3>
+    <div id="saved-list"></div>
+  </div>
+
+  <div class="foot"><div class="assina">Desenvolvido por <b>Leandro Aquino</b> · Gerência Técnica</div></div>
+</main>
+
+<!-- ===================== TELA 2: CHECKLIST ===================== -->
+<div class="tools hidden" id="tools">
+  <div class="tools-in">
+    <input class="search" id="busca" placeholder="Buscar item ou referência…" autocomplete="off">
+    <button class="chip" id="f-todos" aria-pressed="true">Todos</button>
+    <button class="chip" id="f-pend" aria-pressed="false">Pendentes</button>
+    <button class="chip" id="f-div" aria-pressed="false">Divergências</button>
+    <button class="chip" id="f-ref" aria-pressed="false">Com referência</button>
+    <button class="btn ghost" id="btn-allok">Marcar tudo OK</button>
+    <button class="btn ghost" id="btn-limpar">Limpar</button>
+    <button class="btn ghost" id="btn-trocar">Trocar técnico</button>
+  </div>
+</div>
+
+<main class="hidden" id="tela-check">
+  <div id="lista"></div>
+  <p id="vazio" class="hidden" style="color:var(--gray-d);text-align:center;padding:30px 0">Nenhum item nesse filtro.</p>
+
+  <section class="block">
+    <h2>Foto e assinatura do técnico</h2>
+    <p>A foto e a assinatura vão junto no arquivo final do checklist.</p>
+    <div class="two">
+      <div>
+        <div class="shot" id="shot"><span id="shot-ph">Sem foto</span><video id="cam" class="hidden" playsinline muted></video><img id="foto" class="hidden" alt="Foto do técnico"></div>
+        <div class="row">
+          <button class="btn ghost" id="btn-cam">Abrir câmera</button>
+          <button class="btn solid hidden" id="btn-tirar">Tirar foto</button>
+          <button class="btn ghost" id="btn-refazer" style="display:none">Refazer</button>
+          <label class="btn ghost" for="file-foto" style="display:inline-block">Enviar do celular</label>
+          <input type="file" id="file-foto" accept="image/*" capture="user" class="hidden">
+        </div>
+        <div class="hint" id="foto-info">Se a câmera não abrir, use “Enviar do celular”.</div>
+      </div>
+      <div>
+        <canvas id="sig"></canvas>
+        <div class="row"><button class="btn ghost" id="btn-sig-limpar">Apagar assinatura</button></div>
+        <div class="hint">Assine com o dedo ou com o mouse.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Envio automático para o Drive</h2>
+    <p>Configure uma vez neste aparelho. A senha fica guardada só aqui, não vai junto no arquivo publicado.</p>
+    <div class="ident" style="margin-top:0">
+      <div class="fld"><label for="dv-url">Endereço do script (termina em /exec)</label><input id="dv-url" autocomplete="off" spellcheck="false"></div>
+      <div class="fld"><label for="dv-senha">Senha do script</label><input id="dv-senha" type="password" autocomplete="off" placeholder="A senha que você colocou no script"></div>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="btn-dv-testar">Testar conexão</button>
+      <span class="hint" id="dv-st" style="margin-top:0"></span>
+    </div>
+  </section>
+
+  <section class="block final">
+    <h2 style="font-size:19px">Fechar checklist</h2>
+    <p>Baixa o arquivo .zip no aparelho e envia a pasta para o Drive.</p>
+    <button class="btn solid" id="btn-fechar">Finalizar e enviar</button>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <div class="foot"><div class="assina">Desenvolvido por <b>Leandro Aquino</b> · Gerência Técnica</div></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+
+const STATUS = [
+  {v:"ok",t:"OK"},{v:"falta",t:"Faltando"},{v:"trocar",t:"Trocar / danificado"},
+  {v:"perdido",t:"Perdido"},{v:"corrigir",t:"Corrigir sistema"}
+];
+const PREFIX = "mgn_chk_v2:";
+let ITENS = [], st = null, filtro="todos", busca="", pendente=null;
+
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function fmt(d){ const p=n=>String(n).padStart(2,"0"); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+const $ = id => document.getElementById(id);
+
+/* ================= LEITURA DO RELATÓRIO ================= */
+function lerRelatorio(texto){
+  const limpo = texto.replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
+  const partes = limpo.split(/Estoque-/g);
+  if(partes.length < 2) return {erro:"Não encontrei nenhuma linha de estoque no arquivo."};
+
+  let tecnico = "", itens = [];
+  for(let k=1;k<partes.length;k++){
+    let bloco = partes[k].trim();
+    if(!bloco) continue;
+    const esp = bloco.indexOf(" ");
+    if(esp < 0) continue;
+    const local = bloco.slice(0,esp);
+    if(!tecnico) tecnico = local;
+    bloco = bloco.slice(esp+1).trim();
+    if(!bloco) continue;
+
+    const tk = bloco.split(" ");
+    let corte = -1;
+    for(let i=0;i+2<tk.length;i++){
+      if(/^\d+$/.test(tk[i]) && /^\d+$/.test(tk[i+1]) && /^\d+$/.test(tk[i+2])){
+        const a=+tk[i], b=+tk[i+1], c=+tk[i+2];
+        if(a-b===c){ corte=i; break; }
+      }
+    }
+    if(corte < 0) continue;
+
+    let nome = tk.slice(0,corte).join(" ").trim();
+    nome = nome.replace(/\s+\d{8}\s*-\s*.+$/,"").trim();
+    nome = nome.replace(/[\s\-–—]+$/,"").trim();
+    if(!nome) continue;
+
+    const q = +tk[corte+2];
+    const refs = tk.slice(corte+3).filter(x=>x && x !== "-");
+    const u = /por\s+metro/i.test(nome) ? "m" : "un";
+    itens.push({n:nome, q:q, r:refs, u:u});
+  }
+  if(!itens.length) return {erro:"Li o arquivo, mas não consegui identificar os itens."};
+  return {tecnico, itens};
+}
+
+async function lerPDF(file){
+  if(!window.pdfjsLib) throw new Error("leitor de PDF não carregou");
+  const buf = await file.arrayBuffer();
+  const doc = await pdfjsLib.getDocument({data:buf}).promise;
+  let txt = "";
+  for(let p=1;p<=doc.numPages;p++){
+    const pg = await doc.getPage(p);
+    const c = await pg.getTextContent();
+    txt += " " + c.items.map(i=>i.str).join(" ");
+  }
+  return txt;
+}
+
+/* ================= TELA DE IMPORTAÇÃO ================= */
+function avisoImp(t,tipo){ $("msg-imp").textContent=t; $("msg-imp").className="msg "+(tipo||""); }
+
+function mostrarPrevia(res){
+  pendente = res;
+  $("prev-h").textContent = `Técnico: ${res.tecnico} — ${res.itens.length} itens, ${res.itens.reduce((a,i)=>a+i.q,0)} unidades`;
+  $("prev-b").innerHTML = res.itens.map(i=>`
+    <tr><td>${esc(i.n)}</td><td class="q">${i.q} ${i.u}</td>
+    <td class="refc">${i.r.length? esc(i.r.join(" · ")) : "—"}</td></tr>`).join("");
+  $("prev").classList.remove("hidden");
+  $("prev").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+async function processarArquivo(file){
+  avisoImp("Lendo o arquivo…","");
+  try{
+    let texto;
+    if(/\.pdf$/i.test(file.name) || file.type==="application/pdf") texto = await lerPDF(file);
+    else texto = await file.text();
+    const res = lerRelatorio(texto);
+    if(res.erro){ avisoImp(res.erro+" Tente colar o texto do relatório na opção abaixo.","e"); return; }
+    avisoImp("","");
+    mostrarPrevia(res);
+  }catch(err){
+    avisoImp("Não consegui abrir esse arquivo. Tente colar o texto do relatório na opção abaixo.","e");
+  }
+}
+
+$("btn-pdf").addEventListener("click", ()=>$("file-pdf").click());
+$("file-pdf").addEventListener("change", ev=>{ const f=ev.target.files[0]; if(f) processarArquivo(f); ev.target.value=""; });
+$("btn-colar").addEventListener("click", ()=>{
+  const t = $("txt-colar").value;
+  if(!t.trim()){ avisoImp("Cole o texto do relatório primeiro.","e"); return; }
+  const res = lerRelatorio(t);
+  if(res.erro){ avisoImp(res.erro,"e"); return; }
+  avisoImp("","");
+  mostrarPrevia(res);
+});
+const drop = $("drop");
+["dragenter","dragover"].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add("on")}));
+["dragleave","drop"].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove("on")}));
+drop.addEventListener("drop", ev=>{ const f=ev.dataTransfer.files[0]; if(f) processarArquivo(f); });
+$("btn-cancelar").addEventListener("click", ()=>{ pendente=null; $("prev").classList.add("hidden"); });
+
+$("btn-usar").addEventListener("click", ()=>{
+  if(!pendente) return;
+  const chave = PREFIX + pendente.tecnico;
+  if(localStorage.getItem(chave) && !confirm(`Já existe um checklist salvo de ${pendente.tecnico} neste aparelho. Começar um novo apaga o anterior. Continuar?`)) return;
+  iniciar(pendente.tecnico, pendente.itens, null);
+});
+
+/* ================= SALVOS ================= */
+function listarSalvos(){
+  const box=$("saved"), list=$("saved-list");
+  let achou=[];
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && k.startsWith(PREFIX)){
+        try{ const o=JSON.parse(localStorage.getItem(k)); if(o&&o.itens) achou.push({k,o}); }catch(e){}
+      }
+    }
+  }catch(e){}
+  if(!achou.length){ box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  list.innerHTML = achou.map(({k,o})=>{
+    const pend = o.est.filter(x=>!x.status).length;
+    return `<div class="sv">
+      <div><div class="who">${esc(o.tec)}</div>
+      <div class="when">Iniciado em ${fmt(new Date(o.inicio))} · ${o.itens.length} itens · ${pend} pendentes</div></div>
+      <div class="row" style="margin:0">
+        <button class="btn solid" data-k="${esc(k)}" data-act="abrir">Continuar</button>
+        <button class="btn ghost" data-k="${esc(k)}" data-act="apagar">Apagar</button>
+      </div></div>`;
+  }).join("");
+}
+$("saved-list").addEventListener("click", ev=>{
+  const b = ev.target.closest("[data-act]"); if(!b) return;
+  const k = b.dataset.k;
+  if(b.dataset.act==="apagar"){
+    if(!confirm("Apagar esse checklist salvo?")) return;
+    try{ localStorage.removeItem(k); }catch(e){}
+    listarSalvos(); return;
+  }
+  try{
+    const o = JSON.parse(localStorage.getItem(k));
+    iniciar(o.tec, o.itens, o);
+  }catch(e){ alert("Não consegui abrir esse checklist."); }
+});
+
+/* ================= INÍCIO DO CHECKLIST ================= */
+function iniciar(tec, itens, salvo){
+  ITENS = itens;
+  if(salvo){ st = salvo; }
+  else{
+    st = { tec:tec, resp:"", veic:"", inicio:new Date().toISOString(), itens:itens, est:[] };
+    itens.forEach(it=>{
+      const total = it.r.length ? Math.max(it.q, it.r.length) : 0;
+      const refs = [];
+      for(let j=0;j<total;j++) refs.push({exp: it.r[j]||"", ok:"", real:""});
+      st.est.push({cont:"", status:"", obs:"", obsOpen:false, refs:refs});
+    });
+  }
+  $("tela-import").classList.add("hidden");
+  $("tela-check").classList.remove("hidden");
+  $("tools").classList.remove("hidden");
+  $("ident").classList.remove("hidden");
+  $("progwrap").classList.remove("hidden");
+  $("subttl").textContent = "Conferência física × sistema — " + st.tec;
+  $("tec").value = st.tec; $("resp").value = st.resp||""; $("veic").value = st.veic||"";
+  $("dt").value = fmt(new Date(st.inicio));
+  sigSize();
+  montar();
+  window.scrollTo(0,0);
+}
+function salvar(){ try{ localStorage.setItem(PREFIX+st.tec, JSON.stringify(st)); }catch(e){} }
+
+$("btn-trocar").addEventListener("click", ()=>{
+  salvar();
+  $("tela-check").classList.add("hidden");
+  $("tools").classList.add("hidden");
+  $("ident").classList.add("hidden");
+  $("progwrap").classList.add("hidden");
+  $("tela-import").classList.remove("hidden");
+  $("prev").classList.add("hidden");
+  $("subttl").textContent = "Conferência física × sistema";
+  pendente=null; avisoImp("","");
+  listarSalvos();
+  window.scrollTo(0,0);
+});
+
+/* ================= LISTA ================= */
+const lista = $("lista"), vazio = $("vazio");
+function montar(){
+  lista.innerHTML = "";
+  let visiveis = 0;
+  ITENS.forEach((it,i)=>{
+    const e = st.est[i];
+    const temRef = e.refs.length>0;
+    const cont = e.cont===""?null:Number(e.cont);
+    const dif = cont===null?null:cont-it.q;
+    const divergente = (dif!==null&&dif!==0) || (e.status&&e.status!=="ok") || e.refs.some(r=>r.ok==="nok");
+    if(filtro==="pend" && e.status) return;
+    if(filtro==="div" && !divergente) return;
+    if(filtro==="ref" && !temRef) return;
+    if(busca && !it.n.toLowerCase().includes(busca) && !(it.r||[]).join(" ").toLowerCase().includes(busca)) return;
+    visiveis++;
+
+    const card = document.createElement("div");
+    card.className = "card" + ((e.obs||e.obsOpen)?" show-obs":"") + (dif!==null&&dif!==0?" has-diff":"");
+    card.dataset.st = e.status||"";
+    card.dataset.i = i;
+    card.innerHTML = `
+      <div class="card-h">
+        <div class="nm">${esc(it.n)}</div>
+        <div class="qtd-sys"><small>SISTEMA</small><b>${it.q}</b><small>${it.u||"un"}</small></div>
+      </div>
+      <div class="row">
+        <div class="counter">
+          <button type="button" data-a="menos" aria-label="Diminuir">−</button>
+          <input type="text" inputmode="numeric" data-a="cont" value="${e.cont}" placeholder="—" aria-label="Quantidade contada">
+          <button type="button" data-a="mais" aria-label="Aumentar">+</button>
+        </div>
+        <span class="cl">contado</span>
+        <button class="btn ghost" type="button" data-a="igual">= ${it.q}</button>
+      </div>
+      <div class="diff">${dif===null?"":(dif>0?`Sobrando ${dif} ${it.u||"un"}`:`Faltando ${Math.abs(dif)} ${it.u||"un"}`)}</div>
+      <div class="row sts">
+        ${STATUS.map(s=>`<button class="sbtn" type="button" data-a="st" data-v="${s.v}" aria-pressed="${e.status===s.v}">${s.t}</button>`).join("")}
+        <button class="btn ghost" type="button" data-a="obs">Observação</button>
+      </div>
+      <textarea class="obs" data-a="obstxt" placeholder="O que aconteceu com esse item…">${esc(e.obs)}</textarea>
+      ${temRef?`
+      <div class="refs">
+        <div class="refs-h">Referências — conferir uma a uma (${e.refs.filter(r=>r.ok).length}/${e.refs.length})</div>
+        ${e.refs.map((r,j)=>`
+          <div class="ref ${r.ok==="nok"?"nok":""}">
+            <span class="ref-n">${j+1}</span>
+            <span class="ref-exp ${r.exp?"":"empty"}">${r.exp?esc(r.exp):"sem referência no sistema"}</span>
+            <button class="rbtn" type="button" data-a="ref" data-v="ok" data-j="${j}" aria-pressed="${r.ok==="ok"}">Confere</button>
+            <button class="rbtn" type="button" data-a="ref" data-v="nok" data-j="${j}" aria-pressed="${r.ok==="nok"}">Não confere</button>
+            <input class="ref-real" data-a="refreal" data-j="${j}" value="${esc(r.real)}" placeholder="Referência encontrada no técnico">
+          </div>`).join("")}
+      </div>`:""}`;
+    lista.appendChild(card);
+  });
+  vazio.classList.toggle("hidden", visiveis>0);
+  resumo();
+}
+
+function resumo(){
+  let ok=0,div=0,pend=0,unSis=0;
+  ITENS.forEach((it,i)=>{
+    unSis += it.q;
+    const e = st.est[i];
+    const cont = e.cont===""?null:Number(e.cont);
+    const dif = cont===null?null:cont-it.q;
+    const divergente = (dif!==null&&dif!==0)||(e.status&&e.status!=="ok")||e.refs.some(r=>r.ok==="nok");
+    if(!e.status) pend++; else if(divergente) div++; else ok++;
+  });
+  $("s-ok").textContent=ok; $("s-div").textContent=div; $("s-pend").textContent=pend;
+  $("s-tot").textContent=ITENS.length; $("s-un").textContent=unSis;
+  $("barfill").style.width = Math.round(((ITENS.length-pend)/Math.max(1,ITENS.length))*100)+"%";
+}
+
+lista.addEventListener("click", ev=>{
+  const b = ev.target.closest("[data-a]");
+  if(!b || b.tagName==="INPUT" || b.tagName==="TEXTAREA") return;
+  const card = ev.target.closest(".card");
+  const i = card.dataset.i, e = st.est[i], it = ITENS[i], a = b.dataset.a;
+  if(a==="mais"||a==="menos"){
+    let v = e.cont===""?0:Number(e.cont);
+    e.cont = String(a==="mais"? v+1 : Math.max(0,v-1));
+  } else if(a==="igual"){
+    e.cont = String(it.q); if(!e.status) e.status="ok";
+  } else if(a==="st"){
+    e.status = (e.status===b.dataset.v)?"":b.dataset.v;
+  } else if(a==="obs"){
+    e.obsOpen = !card.classList.contains("show-obs");
+    card.classList.toggle("show-obs", e.obsOpen);
+    const t = card.querySelector(".obs"); if(e.obsOpen&&t) t.focus();
+    salvar(); return;
+  } else if(a==="ref"){
+    const r = e.refs[b.dataset.j];
+    r.ok = (r.ok===b.dataset.v)?"":b.dataset.v;
+    if(r.ok!=="nok") r.real="";
+  } else return;
+  salvar(); montar();
+});
+
+lista.addEventListener("input", ev=>{
+  const el = ev.target.closest("[data-a]"); if(!el) return;
+  const card = ev.target.closest(".card");
+  const i = card.dataset.i, e = st.est[i], it = ITENS[i];
+  if(el.dataset.a==="cont"){
+    const v = el.value.replace(/[^0-9]/g,"");
+    if(v!==el.value) el.value=v;
+    e.cont = v; salvar(); resumo();
+    const dif = v===""?null:Number(v)-it.q;
+    card.classList.toggle("has-diff", dif!==null&&dif!==0);
+    const d = card.querySelector(".diff");
+    if(d) d.textContent = dif===null?"":(dif>0?`Sobrando ${dif} ${it.u||"un"}`:`Faltando ${Math.abs(dif)} ${it.u||"un"}`);
+  }
+  else if(el.dataset.a==="obstxt"){ e.obs = el.value; salvar(); }
+  else if(el.dataset.a==="refreal"){ e.refs[el.dataset.j].real = el.value; salvar(); }
+});
+
+$("busca").addEventListener("input", ev=>{ busca=ev.target.value.trim().toLowerCase(); montar(); });
+const filtros = {todos:"f-todos",pend:"f-pend",div:"f-div",ref:"f-ref"};
+Object.entries(filtros).forEach(([k,id])=>{
+  $(id).addEventListener("click", ()=>{
+    filtro=k;
+    Object.entries(filtros).forEach(([k2,id2])=>$(id2).setAttribute("aria-pressed",String(k2===k)));
+    montar();
+  });
+});
+$("btn-allok").addEventListener("click", ()=>{
+  if(!confirm("Marcar todos os itens como OK, com a quantidade igual ao sistema e todas as referências conferindo?\n\nDepois é só ajustar as exceções.")) return;
+  ITENS.forEach((it,i)=>{ const e=st.est[i]; e.cont=String(it.q); e.status="ok"; e.refs.forEach(r=>{r.ok="ok";r.real="";}); });
+  salvar(); montar();
+});
+$("btn-limpar").addEventListener("click", ()=>{
+  if(!confirm("Apagar todas as marcações deste checklist?")) return;
+  ITENS.forEach((it,i)=>{ const e=st.est[i]; e.cont="";e.status="";e.obs="";e.obsOpen=false; e.refs.forEach(r=>{r.ok="";r.real="";}); });
+  salvar(); montar();
+});
+["resp","veic"].forEach(id=>$(id).addEventListener("input", ()=>{ st[id]=$(id).value; salvar(); }));
+$("tec").addEventListener("input", ()=>{ st.tec = $("tec").value; $("subttl").textContent="Conferência física × sistema — "+st.tec; salvar(); });
+
+/* ================= FOTO ================= */
+const QUALIDADE = 0.6;   // 60%
+const LADO_MAX  = 1280;  // maior lado da imagem, em pixels
+let fotoBlob=null, stream=null;
+const ph=$("shot-ph"), cam=$("cam"), foto=$("foto");
+
+function kb(b){ return b<1024*1024 ? Math.round(b/1024)+" KB" : (b/1048576).toFixed(1)+" MB"; }
+
+async function usarFoto(bruta){
+  $("foto-info").textContent = "Comprimindo…";
+  const red = await reduzirImagem(bruta, LADO_MAX);
+  fotoBlob = red;
+  foto.src = URL.createObjectURL(red);
+  ph.classList.add("hidden"); cam.classList.add("hidden"); foto.classList.remove("hidden");
+  $("btn-tirar").classList.add("hidden"); $("btn-refazer").style.display="inline-block";
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  const economia = bruta.size>0 ? Math.max(0, Math.round(100 - (red.size/bruta.size)*100)) : 0;
+  $("foto-info").textContent = `Foto pronta: ${kb(bruta.size)} → ${kb(red.size)} (${economia}% menor)`;
+}
+
+$("btn-cam").addEventListener("click", async ()=>{
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:false});
+    cam.srcObject=stream; await cam.play();
+    ph.classList.add("hidden"); foto.classList.add("hidden"); cam.classList.remove("hidden");
+    $("btn-tirar").classList.remove("hidden");
+  }catch(err){ ph.textContent="Câmera bloqueada — use “Enviar do celular”."; }
+});
+$("btn-tirar").addEventListener("click", ()=>{
+  const c=document.createElement("canvas");
+  c.width=cam.videoWidth||640; c.height=cam.videoHeight||480;
+  c.getContext("2d").drawImage(cam,0,0,c.width,c.height);
+  c.toBlob(b=>{ if(b) usarFoto(b); }, "image/jpeg", 0.95);
+});
+$("btn-refazer").addEventListener("click", ()=>{
+  fotoBlob=null; foto.classList.add("hidden"); ph.classList.remove("hidden"); ph.textContent="Sem foto";
+  $("btn-refazer").style.display="none";
+  $("foto-info").textContent = "Se a câmera não abrir, use “Enviar do celular”.";
+});
+$("file-foto").addEventListener("change", ev=>{
+  const f=ev.target.files[0]; if(f) usarFoto(f);
+  ev.target.value="";
+});
+
+/* ================= ASSINATURA ================= */
+const sig=$("sig"), sctx=sig.getContext("2d");
+let assinou=false, desenhando=false;
+function sigSize(){
+  const r=sig.getBoundingClientRect(); if(!r.width) return;
+  const dpr=window.devicePixelRatio||1;
+  const data = assinou? sig.toDataURL() : null;
+  sig.width=r.width*dpr; sig.height=r.height*dpr;
+  sctx.setTransform(dpr,0,0,dpr,0,0);
+  sctx.fillStyle="#fff"; sctx.fillRect(0,0,r.width,r.height);
+  sctx.strokeStyle="#000"; sctx.lineWidth=2.4; sctx.lineCap="round"; sctx.lineJoin="round";
+  if(data){ const im=new Image(); im.onload=()=>sctx.drawImage(im,0,0,r.width,r.height); im.src=data; }
+}
+window.addEventListener("resize", sigSize);
+function pos(ev){ const r=sig.getBoundingClientRect(); return {x:ev.clientX-r.left,y:ev.clientY-r.top}; }
+sig.addEventListener("pointerdown", ev=>{ desenhando=true; assinou=true; sig.setPointerCapture(ev.pointerId); const p=pos(ev); sctx.beginPath(); sctx.moveTo(p.x,p.y); });
+sig.addEventListener("pointermove", ev=>{ if(!desenhando) return; const p=pos(ev); sctx.lineTo(p.x,p.y); sctx.stroke(); });
+sig.addEventListener("pointerup", ()=>desenhando=false);
+sig.addEventListener("pointerleave", ()=>desenhando=false);
+$("btn-sig-limpar").addEventListener("click", ()=>{ assinou=false; sigSize(); });
+
+/* ================= FECHAMENTO ================= */
+function gerarTexto(){
+  const agora=new Date(), L=[], nome=(st.tec||"Sem nome").trim();
+  let ok=0,div=0,pend=0,unSis=0,unCont=0,linhasDiv=[];
+  ITENS.forEach((it,i)=>{
+    const e=st.est[i], cont = e.cont===""?null:Number(e.cont);
+    unSis+=it.q; if(cont!==null) unCont+=cont;
+    const dif = cont===null?null:cont-it.q;
+    const refNok = e.refs.filter(r=>r.ok==="nok");
+    const divergente = (dif!==null&&dif!==0)||(e.status&&e.status!=="ok")||refNok.length>0;
+    if(!e.status) pend++; else if(divergente) div++; else ok++;
+    if(divergente){
+      const t=[];
+      if(dif!==null&&dif!==0) t.push(dif>0?`sobra ${dif}`:`falta ${Math.abs(dif)}`);
+      if(e.status&&e.status!=="ok") t.push((STATUS.find(s=>s.v===e.status)||{}).t);
+      refNok.forEach(r=>t.push(`ref divergente: sistema "${r.exp||"-"}" / encontrada "${r.real||"nao informada"}"`));
+      if(e.obs) t.push(`obs: ${e.obs}`);
+      linhasDiv.push(`  - ${it.n} (sistema ${it.q} / contado ${cont===null?"nao contado":cont}) -> ${t.join(" | ")}`);
+    }
+  });
+  L.push("=================================================");
+  L.push("        MGN FIBRA - CHECKLIST DE ESTOQUE");
+  L.push("=================================================");
+  L.push(`Tecnico..............: ${nome}`);
+  L.push(`Conferido por........: ${st.resp||"-"}`);
+  L.push(`Veiculo / placa......: ${st.veic||"-"}`);
+  L.push(`Inicio do checklist..: ${fmt(new Date(st.inicio))}`);
+  L.push(`Fechamento...........: ${fmt(agora)}`);
+  L.push("");
+  L.push("-------------------- RESUMO ---------------------");
+  L.push(`Tipos de item...........: ${ITENS.length}`);
+  L.push(`Conferidos OK...........: ${ok}`);
+  L.push(`Com divergencia.........: ${div}`);
+  L.push(`Nao conferidos..........: ${pend}`);
+  L.push(`Unidades no sistema.....: ${unSis}`);
+  L.push(`Unidades contadas.......: ${unCont}`);
+  L.push(`Diferenca total.........: ${unCont-unSis}`);
+  L.push("");
+  L.push("----------------- DIVERGENCIAS ------------------");
+  L.push(linhasDiv.length? linhasDiv.join("\n") : "  Nenhuma divergencia registrada.");
+  L.push("");
+  L.push("--------------- CONFERENCIA ITEM A ITEM ---------");
+  ITENS.forEach((it,i)=>{
+    const e=st.est[i];
+    const cont = e.cont===""?"nao contado":e.cont;
+    const stx = e.status? (STATUS.find(s=>s.v===e.status)||{}).t : "NAO CONFERIDO";
+    L.push(`[${stx}] ${it.n}`);
+    L.push(`      Sistema: ${it.q} ${it.u||"un"}  |  Contado: ${cont}`);
+    if(e.obs) L.push(`      Obs: ${e.obs}`);
+    e.refs.forEach((r,j)=>{
+      const s = r.ok==="ok"?"CONFERE":(r.ok==="nok"?"NAO CONFERE":"nao verificada");
+      L.push(`      Ref ${j+1}: ${r.exp||"(sem ref no sistema)"} -> ${s}${r.ok==="nok"?`  | encontrada: ${r.real||"nao informada"}`:""}`);
+    });
+  });
+  L.push("");
+  L.push("-------------------------------------------------");
+  L.push("Assinatura do tecnico: arquivo assinatura.png");
+  L.push("Foto do tecnico......: arquivo foto.jpg");
+  L.push("-------------------------------------------------");
+  return {txt:L.join("\n"), pend, agora, nome};
+}
+function aviso(t,tipo){ $("msg").textContent=t; $("msg").className="msg "+(tipo||""); }
+
+/* ================= PONTE COM O DRIVE ================= */
+const DRIVE_KEY = "mgn_drive_cfg";
+const DRIVE_URL_PADRAO = "https://script.google.com/macros/s/AKfycbxvoAorIH-zlHRxdM--SA8MedVvTeOPE2Re02Gmg4X6jjfAO8xVZ8swxENZfIu1umU2ZQ/exec";
+let cfg = {url:DRIVE_URL_PADRAO, senha:""};
+try{ const c=JSON.parse(localStorage.getItem(DRIVE_KEY)||"null"); if(c) cfg={url:c.url||DRIVE_URL_PADRAO, senha:c.senha||""}; }catch(e){}
+$("dv-url").value = cfg.url; $("dv-senha").value = cfg.senha;
+function salvarCfg(){
+  cfg.url = $("dv-url").value.trim(); cfg.senha = $("dv-senha").value;
+  try{ localStorage.setItem(DRIVE_KEY, JSON.stringify(cfg)); }catch(e){}
+}
+$("dv-url").addEventListener("input", salvarCfg);
+$("dv-senha").addEventListener("input", salvarCfg);
+function dvSt(t,tipo){
+  const el=$("dv-st"); el.textContent=t;
+  el.style.color = tipo==="e" ? "var(--red)" : (tipo==="s" ? "var(--ok)" : "var(--gray-d)");
+}
+$("btn-dv-testar").addEventListener("click", async ()=>{
+  salvarCfg();
+  if(!cfg.url){ dvSt("Preencha o endereço do script.","e"); return; }
+  dvSt("Testando…","");
+  try{
+    const r = await fetch(cfg.url, {method:"GET"});
+    const j = await r.json();
+    dvSt(j.ok ? "Conexão ok. A senha só é conferida na hora do envio." : "O script respondeu com erro.", j.ok?"s":"e");
+  }catch(err){
+    dvSt("Não consegui falar com o script. Confira o endereço e se o acesso está como “Qualquer pessoa”.","e");
+  }
+});
+function blobParaBase64(blob){
+  return new Promise((res,rej)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>res(String(fr.result).split(",")[1]);
+    fr.onerror = rej;
+    fr.readAsDataURL(blob);
+  });
+}
+function reduzirImagem(blob, maxLado){
+  return new Promise(res=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const f = Math.min(1, maxLado/Math.max(img.width,img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width*f); c.height = Math.round(img.height*f);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      c.toBlob(b=>{ URL.revokeObjectURL(img.src); res(b||blob); }, "image/jpeg", QUALIDADE);
+    };
+    img.onerror = ()=>res(blob);
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
+$("btn-fechar").addEventListener("click", async ()=>{
+  if(!st.resp || !st.resp.trim()){ aviso("Preencha quem está conferindo antes de fechar.","e"); return; }
+  const r = gerarTexto();
+  if(r.pend>0 && !confirm(`Ainda tem ${r.pend} item(ns) sem conferir. Fechar assim mesmo?`)) return;
+  if(!assinou && !confirm("O técnico ainda não assinou. Fechar assim mesmo?")) return;
+
+  const btn = $("btn-fechar"); btn.disabled = true;
+  aviso("Montando o arquivo…","");
+
+  const p=n=>String(n).padStart(2,"0"), d=r.agora;
+  const carimbo = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}h${p(d.getMinutes())}`;
+  const base = `Checklist_${r.nome.replace(/[^\p{L}\p{N}]+/gu,"-")}_${carimbo.replace(/[ :]/g,"_")}`;
+
+  let fotoFinal = fotoBlob;
+  let sigBlob = null;
+  if(assinou) sigBlob = await new Promise(res=>sig.toBlob(res,"image/png"));
+
+  // 1) arquivo no aparelho
+  try{
+    if(typeof JSZip==="undefined") throw new Error("nozip");
+    const zip = new JSZip(), pasta = zip.folder(base);
+    pasta.file("checklist.txt", r.txt);
+    if(fotoFinal) pasta.file("foto.jpg", fotoFinal);
+    if(sigBlob) pasta.file("assinatura.png", sigBlob);
+    const blob = await zip.generateAsync({type:"blob"});
+    await salvarLocal(`${base}.zip`, blob);
+  }catch(err){
+    try{ await salvarLocal(`${base}.txt`, r.txt); }catch(e2){}
+  }
+
+  // 2) envio para o Drive
+  salvarCfg();
+  if(!cfg.url || !cfg.senha){
+    aviso("Arquivo gerado. O envio para o Drive ainda não está configurado.","e");
+    btn.disabled=false; return;
+  }
+  aviso("Enviando para o Drive…","");
+  try{
+    const corpo = {
+      senha: cfg.senha,
+      tecnico: r.nome,
+      carimbo: carimbo,
+      txt: r.txt,
+      foto: fotoFinal ? await blobParaBase64(fotoFinal) : null,
+      assinatura: sigBlob ? await blobParaBase64(sigBlob) : null
+    };
+    const resp = await fetch(cfg.url, {
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify(corpo)
+    });
+    const j = await resp.json();
+    if(j.ok) aviso(`Pronto. Enviado para o Drive: ${st.tec} / ${carimbo}`,"s");
+    else aviso("Arquivo gerado, mas o Drive recusou: "+(j.erro||"erro desconhecido"),"e");
+  }catch(err){
+    aviso("Arquivo gerado, mas não consegui enviar ao Drive. Confira a internet e o botão “Testar conexão”.","e");
+  }
+  btn.disabled=false;
+});
+
+async function salvarLocal(nomeArq, conteudo){
+  const blob = (typeof conteudo === "string")
+    ? new Blob([conteudo], {type:"text/plain;charset=utf-8"})
+    : conteudo;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = nomeArq; a.rel = "noopener";
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 3000);
+}
+
+listarSalvos();
+</script>
+</body>
+</html>
